@@ -56,9 +56,14 @@ object Misho extends App {
       }
     }).sortBy(_.column)
 
-    // assert no overlaps
+    // find pauses and assert no overlaps
     val columns = mutable.Set[Int]()
+    val pauses = mutable.Set[ExcelNote]()
     excelNotes.foreach{ note =>
+      val max = if (columns.isEmpty) None else Some(columns.max)
+      if (max.isDefined && max.get + 1 < note.column) {
+        pauses += ExcelNote(max.get + 1, None, None, note.column - max.get - 1)
+      }
       val currentCount = columns.size
       for ( c <- note.column until note.column + note.length ) {
         columns += c
@@ -66,9 +71,7 @@ object Misho extends App {
       assert(columns.size == currentCount + note.length, "Found note overlap: " + note)
     }
 
-    // TODO handle pauses here
-
-    val notes = excelNotes.map{ note =>
+    val notes = (excelNotes ++ pauses).sortBy(_.column).map{ note =>
       if (note.row.isDefined) {
         Note(Some(transpose - note.row.get), Duration(note.length, minimalDenominator), Sounds.of(note.lyric.get))
       } else {
