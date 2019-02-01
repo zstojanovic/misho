@@ -20,3 +20,14 @@ It's basically a form of piano roll with lyrics.
 Please don't enter any notes in first column or first row, they are reserved for future use.
 Cell A1 denotes which note of piano roll would first row represent (can be used for easy transposition).
 
+## TODO
+
+- allow definition of time signature and tempo in excel
+- allow better control over phoneme lenghts
+- make a binary release
+- make it user friendly
+- add basic instructions for non Linux users
+
+## Inspiration
+
+The man, the legend, [Mate Mišo Kovač](https://en.wikipedia.org/wiki/Mi%C5%A1o_Kova%C4%8D).
