@@ -10,7 +10,8 @@ import scala.collection.mutable
 import sys.process._
 
 object Misho extends App {
-  private val noteToMidiMap = Map("A" -> 0, "B" -> 2, "C" -> 3, "D" -> 5, "E" -> 7, "F" -> 8, "G" -> 10)
+  private val maxDuration = 20000
+  private val noteToMidiMap = Map("C" -> 0, "D" -> 2, "E" -> 4, "F" -> 5, "G" -> 7, "A" -> 9, "B" -> 11)
   private val minimalDenominator = 8
 
   private val song = load(args(0))
@@ -22,14 +23,20 @@ object Misho extends App {
       val f = note.pitch.map( p => frequency(p, -24))
       val totalDuration = duration(note.duration, meter, tempo)
       if (f.isDefined) {
-        val soundCount = note.sounds.size
+        val soundCount = note.sounds.map(_.durationWeight).sum
         note.sounds.map { sound =>
-          val ph = PhonemeConverter.convert(sound.phoneme)
-          val duration = totalDuration / soundCount
+          val ph = sound.phoneme
+          val duration = totalDuration / soundCount * sound.durationWeight
           s"$ph $duration 5 ${f.get} 50 ${f.get} 95 ${f.get}"
         }
       } else {
-        Seq(s"_ $totalDuration")
+        if (totalDuration > maxDuration) {
+          val n = math.ceil(totalDuration / maxDuration).toInt
+          val duration = totalDuration / n
+          Seq.fill(n)(s"_ $duration")
+        } else {
+          Seq(s"_ $totalDuration")
+        }
       }
     }.flatten.mkString("\n")
   }
@@ -73,7 +80,7 @@ object Misho extends App {
 
     val notes = (excelNotes ++ pauses).sortBy(_.column).map{ note =>
       if (note.row.isDefined) {
-        Note(Some(transpose - note.row.get), Duration(note.length, minimalDenominator), Sounds.of(note.lyric.get))
+        Note(Some(transpose - note.row.get), Duration(note.length, minimalDenominator), LyricsParser.parse(note.lyric.get))
       } else {
         Note(None, Duration(note.length, minimalDenominator), Nil)
       }
@@ -85,7 +92,7 @@ object Misho extends App {
   private case class ExcelNote(column: Int, row: Option[Int], lyric: Option[String], length: Int)
 
   private def convertNoteNameToMidi(note: String): Int = {
-    note.substring(1, 2).toInt * 12 + noteToMidiMap(note.substring(0, 1)) + 21
+    note.substring(1, 2).toInt * 12 + noteToMidiMap(note.substring(0, 1)) + 12
   }
 
   private def frequency(midiNoteNumber: Int, transpose: Int = 0): Float = {
